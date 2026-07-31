@@ -157,8 +157,8 @@ EOF
 
 cat << 'EOF' > /home/retro/.bash_profile
 if [ -z "$WAYLAND_DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
-    export SDL_VIDEODRIVER=wayland
     export XDG_SESSION_TYPE=wayland
+    # Cage автоматично підніме Xwayland для DOSBox-X якщо потрібно
     exec cage -s -- dosbox-x -conf /home/retro/retroconsole/dosbox-win98.conf
 fi
 EOF
