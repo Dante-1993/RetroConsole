@@ -51,16 +51,25 @@ echo "=== 4. Конфігурація Samba для Windows 98 (SMBv1) ==="
 cat << 'EOF' > /etc/samba/smb.conf
 [global]
    workgroup = WORKGROUP
-   server string = RetroConsole
-   netbios name = RETROCONSOLE
+   server string = Retro Server
    security = user
-   map to guest = bad user
 
-   # --- Сумісність з Windows 98 (Debian 13 FIX) ---
+   # 1. Примусово вмикаємо старий протокол SMB1 для Windows 98
    server min protocol = NT1
-   lanman auth = yes
+   client min protocol = NT1
+
+   # 2. Дозволяємо старі методи аутентифікації Win9x
    ntlm auth = yes
-   client NTLMv2 auth = no
+   lanman auth = yes
+   raw NTLMv1 = yes
+
+   # 3. Виграємо вибори Master Browser у роутера (192.168.101.1)
+   local master = yes
+   preferred master = yes
+   os level = 255
+
+   # 4. Вимикаємо розширення POSIX, які плутають Windows 98
+   unix extensions = no
 
 [isos]
    path = /home/retro/retroconsole/share
