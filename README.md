@@ -26,4 +26,4 @@
 Запустіть під обліковим записом `root`:
 
 ```bash
-curl -sSL [https://raw.githubusercontent.com/Dante-1993/RetroConsole/main/install-retroconsole.sh](https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME/main/install-retroconsole.sh) | bash
+curl -sSL https://raw.githubusercontent.com/Dante-1993/RetroConsole/main/install-retroconsole.sh | sudo bash
