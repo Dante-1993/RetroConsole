@@ -155,10 +155,8 @@ ExecStart=-/sbin/agetty --autologin retro --noclear %I $TERM
 EOF
 
 cat << 'EOF' > /home/retro/.bash_profile
-if [ -z "$WAYLAND_DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
-    export XDG_SESSION_TYPE=wayland
-    # Cage автоматично підніме Xwayland для DOSBox-X якщо потрібно
-    exec cage -s -- dosbox-x -conf /home/retro/retroconsole/dosbox-win98.conf
+if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
+    exec startx -- -nocursor
 fi
 EOF
 cat << 'EOF' > /home/retro/.xinitrc
