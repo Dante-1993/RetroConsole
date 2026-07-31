@@ -183,6 +183,7 @@ output=opengl
 [dosbox]
 title=RetroConsole Win98
 memsize=256
+ver=7.10
 
 [cpu]
 core=dynamic
@@ -197,6 +198,7 @@ backend=slirp
 
 [autoexec]
 @echo off
+ver set 7.10
 imgmount c /home/retro/retroconsole/images/win98.img -t hdd -fs fat
 boot -l c
 EOF
