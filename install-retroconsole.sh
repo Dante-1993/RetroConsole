@@ -16,13 +16,12 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-echo "=== 1. Оновлення системи та встановлення залежностей ==="
 apt update && apt upgrade -y
 apt install -y \
-    cage seatd \
+    xorg xinit openbox \
     build-essential git automake libsdl2-dev libsdl2-net-dev \
     libpcap-dev libslirp-dev libfluidsynth-dev libpng-dev libfreetype6-dev \
-    samba udev procps plymouth wget gzip
+    samba udev procps plymouth plymouth-themes
 
 echo "=== 2. Створення користувача та структури каталогів ==="
 if ! id "retro" &>/dev/null; then
@@ -162,18 +161,31 @@ if [ -z "$WAYLAND_DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
     exec cage -s -- dosbox-x -conf /home/retro/retroconsole/dosbox-win98.conf
 fi
 EOF
+cat << 'EOF' > /home/retro/.xinitrc
+#!/bin/sh
+xset -dpms
+xset s off
+xset s noblank
 
-# Видаляємо застарілий .xinitrc якщо він був
-rm -f /home/retro/.xinitrc
+# Запуск віконного менеджера для коректного Fullscreen в X11
+openbox &
+
+exec dosbox-x -conf /home/retro/retroconsole/dosbox-win98.conf -fullscreen
+EOF
+chmod +x /home/retro/.xinitrc
 chown retro:retro /home/retro/.bash_profile
+chown retro:retro /home/retro/.xinitrc
 
 echo "=== 8. Конфігурація DOSBox-X (Мережа + Win98) ==="
 cat << 'EOF' > "$RETRO_DIR/dosbox-win98.conf"
 [sdl]
 fullscreen=true
-output=opengl
+fullresolution=desktop
+windowresolution=desktop
+output=texture
 autofit=true
 autolock=true
+clip_curspos=true
 
 [render]
 aspect=true
