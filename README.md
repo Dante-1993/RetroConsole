@@ -1,0 +1,29 @@
+# RetroConsole x86 🎮
+
+Автоматизований інсталятор для перетворення будь-якого x86 ПК або ноутбука на ретро-консоль з **Windows 98 SE** на базі **Debian 13 (Trixie)** та найсвіжішої версії **DOSBox-X**.
+
+Натхненно концептом [DOSbian](https://github.com/weese/dosbian-x), але повністю адаптовано для x86 архітектури з автоматичною мережевою шарою та безшумним завантаженням.
+
+---
+
+## ✨ Особливості
+
+- 🤫 **Silent Boot (Quiet Kiosk):** Приховано екрани завантаження GRUB, консольні повідомлення ядра Linux та systemd.
+- 🖥️ **Award BIOS POST Splash:** Авторизована реплика екрана Award Modular BIOS v4.51PG з логотипом *Energy Star* під час завантаження системи.
+- ⚡ **Свіжий DOSBox-X:** Автоматична компіляція останньої версії з Git для максимальної швидкості та стабільності Windows 98.
+- 📁 **Samba Share (SMBv1):** Автоматично налаштована мережева шара для взаємодії з Win98 через віртуальну мережеву карту NE2000.
+- 🔌 **USB Auto-Sync:** Вставляєте USB-флешку з папкою `/retro_isos/*.iso` — і диски автоматично копіюються в мережеву шару Windows 98.
+
+---
+
+## 🚀 Швидкий старт
+
+### Передумови
+Встановіть чисту **Debian 13 (Trixie) Netinst** без графічних оболонок (заберіть галочки з GNOME/KDE під час інсталяції, залишіть тільки *Standard System Utilities*).
+
+### Встановлення в один клік
+
+Запустіть під обліковим записом `root`:
+
+```bash
+curl -sSL [https://raw.githubusercontent.com/Dante-1993/RetroConsole/main/install-retroconsole.sh](https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME/main/install-retroconsole.sh) | bash
