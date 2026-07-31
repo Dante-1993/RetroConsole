@@ -21,8 +21,8 @@ apt install -y \
     xorg xinit openbox \
     build-essential git automake libsdl2-dev libsdl2-net-dev \
     libpcap-dev libslirp-dev libfluidsynth-dev libpng-dev libfreetype6-dev \
-    samba udev procps plymouth plymouth-themes
-
+    samba udev procps plymouth plymouth-themes pipewire-pulse wireplumber dbus-user-session
+systemctl --global disable fluidsynth
 echo "=== 2. Створення користувача та структури каталогів ==="
 if ! id "retro" &>/dev/null; then
     useradd -m -s /bin/bash -G dialout,video,audio,input,cdrom,render retro
@@ -199,6 +199,12 @@ mouse_emulation=ps2
 core=dynamic
 cputype=pentium
 cycles=max
+
+[midi]
+mididevice=fluidsynth
+
+[fluidsynth]
+soundfont=/usr/share/sounds/sf2/FluidR3_GM.sf2
 
 [ne2000]
 ne2000=true
