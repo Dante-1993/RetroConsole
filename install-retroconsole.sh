@@ -5,7 +5,7 @@ set -e
 # НАЛАШТУВАННЯ (Змініть під свій репозиторій)
 # ==============================================================================
 GITHUB_USER="Dante-1993"
-GITHUB_REPO="RetroStation"
+GITHUB_REPO="RetroConsole"
 RELEASE_TAG="v1.0.0"
 IMG_NAME="win98.img.gz"
 WIN98_URL="https://github.com/${GITHUB_USER}/${GITHUB_REPO}/releases/download/${RELEASE_TAG}/${IMG_NAME}"
