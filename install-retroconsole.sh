@@ -173,6 +173,7 @@ cat << 'EOF' > "$RETRO_DIR/dosbox-win98.conf"
 fullscreen=true
 output=opengl
 autofit=true
+autolock=true
 
 [render]
 aspect=true
