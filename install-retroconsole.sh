@@ -19,17 +19,17 @@ fi
 echo "=== 1. Оновлення системи та встановлення залежностей ==="
 apt update && apt upgrade -y
 apt install -y \
-    xorg xinit openbox \
+    cage seatd \
     build-essential git automake libsdl2-dev libsdl2-net-dev \
     libpcap-dev libslirp-dev libfluidsynth-dev libpng-dev libfreetype6-dev \
     samba udev procps plymouth wget gzip
 
 echo "=== 2. Створення користувача та структури каталогів ==="
 if ! id "retro" &>/dev/null; then
-    useradd -m -s /bin/bash -G dialout,video,audio,input,cdrom retro
+    useradd -m -s /bin/bash -G dialout,video,audio,input,cdrom,render retro
 else
     groupadd -f retro
-    usermod -g retro retro
+    usermod -aG dialout,video,audio,input,cdrom,render retro
 fi
 RETRO_DIR="/home/retro/retroconsole"
 mkdir -p "$RETRO_DIR/images"
@@ -147,7 +147,7 @@ EOF
 plymouth-set-default-theme -R retro-bios
 update-initramfs -u
 
-echo "=== 7. Автозапуск графічного середовища (Kiosk Mode) ==="
+echo "=== 7. Автозапуск Wayland-середовища (Cage Kiosk) ==="
 mkdir -p /etc/systemd/system/getty@tty1.service.d/
 cat << 'EOF' > /etc/systemd/system/getty@tty1.service.d/autologin.conf
 [Service]
@@ -156,29 +156,27 @@ ExecStart=-/sbin/agetty --autologin retro --noclear %I $TERM
 EOF
 
 cat << 'EOF' > /home/retro/.bash_profile
-if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
-    exec startx -- -nocursor -quiet >/dev/null 2>&1
+if [ -z "$WAYLAND_DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
+    export SDL_VIDEODRIVER=wayland
+    export XDG_SESSION_TYPE=wayland
+    exec cage -s -- dosbox-x -conf /home/retro/retroconsole/dosbox-win98.conf
 fi
 EOF
 
-cat << 'EOF' > /home/retro/.xinitrc
-#!/bin/sh
-xset -dpms
-xset s off
-xset s noblank
-
-exec dosbox-x -conf /home/retro/retroconsole/dosbox-win98.conf -fullscreen
-EOF
-
-chmod +x /home/retro/.xinitrc
-chown retro:retro /home/retro/.bash_profile /home/retro/.xinitrc
+# Видаляємо застарілий .xinitrc якщо він був
+rm -f /home/retro/.xinitrc
+chown retro:retro /home/retro/.bash_profile
 
 echo "=== 8. Конфігурація DOSBox-X (Мережа + Win98) ==="
 cat << 'EOF' > "$RETRO_DIR/dosbox-win98.conf"
 [sdl]
 fullscreen=true
-fulldouble=true
 output=opengl
+autofit=true
+
+[render]
+aspect=true
+scaler=none
 
 [dosbox]
 title=RetroConsole Win98
