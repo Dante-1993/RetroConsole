@@ -76,7 +76,7 @@ EOF
 systemctl restart smbd nmbd
 
 echo "=== 5. Компіляція та інсталяція DOSBox-X ==="
-cd /tmp
+cd /usr/src
 if [ ! -d "dosbox-x" ]; then
     git clone --depth 1 https://github.com/joncampbell123/dosbox-x.git
 fi
