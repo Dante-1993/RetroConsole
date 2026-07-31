@@ -98,7 +98,7 @@ echo "setterm -cursor off" >> /etc/issue
 # Створення теми Plymouth retro-bios
 THEME_DIR="/usr/share/plymouth/themes/retro-bios"
 mkdir -p "$THEME_DIR"
-printf "iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdom6EAAAAOSURBVHgB7cEBDAAAAMGg+zz/4m4UAAAAAAAAAAAAD1sAARkAAW5S5/oAAAAASUVORK5CYII=" | base64 -d > "$THEME_DIR/energy_star.png"
+echo "iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdom6EAAAAOSURBVHgB7cEBDAAAAMGg+zz/4m4UAAAAAAAAAAAAD1sAARkAAW5S5/oAAAAASUVORK5CYII=" | tr -d '\r\n ' | base64 -d > "$THEME_DIR/energy_star.png"
 cat << 'EOF' > "$THEME_DIR/retro-bios.plymouth"
 [Plymouth Theme]
 Name=Retro BIOS
