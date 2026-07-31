@@ -195,6 +195,7 @@ scaler=none
 title=RetroConsole Win98
 memsize=256
 ver=7.10
+mouse_emulation=ps2
 
 [cpu]
 core=dynamic
