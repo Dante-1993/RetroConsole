@@ -274,6 +274,11 @@ nicbase=300
 nicirq=3
 backend=slirp
 
+[ethernet, slirp]
+mtu = 1500
+mru = 1500
+disable_host_loopback = false
+
 [dos]
 lba=true
 file locking=false
