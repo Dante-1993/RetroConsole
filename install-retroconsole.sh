@@ -16,13 +16,16 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
+echo "=== 1. Оновлення системи та встановлення залежностей ==="
 apt update && apt upgrade -y
 apt install -y \
     xorg xinit openbox \
     build-essential git automake libsdl2-dev libsdl2-net-dev \
     libpcap-dev libslirp-dev libfluidsynth-dev libpng-dev libfreetype6-dev \
     samba udev procps plymouth plymouth-themes pipewire-pulse wireplumber dbus-user-session
+
 systemctl --global disable fluidsynth
+
 echo "=== 2. Створення користувача та структури каталогів ==="
 if ! id "retro" &>/dev/null; then
     useradd -m -s /bin/bash -G dialout,video,audio,input,cdrom,render retro
@@ -30,6 +33,7 @@ else
     groupadd -f retro
     usermod -aG dialout,video,audio,input,cdrom,render retro
 fi
+
 RETRO_DIR="/home/retro/retroconsole"
 mkdir -p "$RETRO_DIR/images"
 mkdir -p "$RETRO_DIR/share"
@@ -51,20 +55,14 @@ echo "=== 4. Конфігурація Samba для Windows 98 (SMBv1) ==="
 cat << 'EOF' > /etc/samba/smb.conf
 [global]
    netbios aliases = 10.0.2.2 RETRO-TEST
-   
-   # Переконайтеся, що ці параметри також присутні:
    smb ports = 139 445
-   # Enforce legacy SMBv1 support
    server min protocol = NT1
    client min protocol = NT1
    wins support = yes
    netbios name = RETROHOST
    name resolve order = wins lmhosts bcast
-   # Allow older authentication methods required by SMBv1
    ntlm auth = yes
    lanman auth = yes
-
-   # Map failed/unauthorized user attempts to the guest account
    map to guest = Bad User
    guest account = nobody
 
@@ -90,20 +88,25 @@ cd dosbox-x
 make -j$(nproc)
 make install
 
-echo "=== 6. Налаштування Silent Boot & Plymouth Retro BIOS ==="
-cat << 'EOF' > /etc/default/grub.d/quiet-boot.conf
-GRUB_TIMEOUT=0
-GRUB_RECORDFAIL_TIMEOUT=0
-GRUB_CMDLINE_LINUX_DEFAULT="quiet splash loglevel=0 vt.handoff=7 console=tty12 rd.systemd.show_status=false rd.udev.log_level=0 quiet_boot fastboot"
-EOF
+echo "=== 6. Налаштування GRUB (/etc/default/grub) та Plymouth Award BIOS ==="
 
-update-grub
+# 🔧 Пряме редагування /etc/default/grub (без .d підпапок)
+sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=0/' /etc/default/grub
+if grep -q "^GRUB_CMDLINE_LINUX_DEFAULT" /etc/default/grub; then
+  sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash loglevel=0 vt.handoff=7 console=tty12 rd.systemd.show_status=false rd.udev.log_level=0 quiet_boot fastboot vt.global_cursor_default=0"/' /etc/default/grub
+else
+  echo 'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash loglevel=0 vt.handoff=7 console=tty12 rd.systemd.show_status=false rd.udev.log_level=0 quiet_boot fastboot vt.global_cursor_default=0"' >> /etc/default/grub
+fi
+
 echo "setterm -cursor off" >> /etc/issue
 
 # Створення теми Plymouth retro-bios
 THEME_DIR="/usr/share/plymouth/themes/retro-bios"
 mkdir -p "$THEME_DIR"
-echo "iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdom6EAAAAOSURBVHgB7cEBDAAAAMGg+zz/4m4UAAAAAAAAAAAAD1sAARkAAW5S5/oAAAAASUVORK5CYII=" | tr -d '\r\n ' | base64 -d > "$THEME_DIR/energy_star.png"
+
+# Логотип EPA Energy Star (Зелений ретро-значок)
+echo "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdom6EAAABDSURBVHhe7cExAQAAAMKg9U9tCj8gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4A045AABjS24eAAAAABJRU5ErkJggg==" | tr -d '\r\n ' | base64 -d > "$THEME_DIR/energy_star.png"
+
 cat << 'EOF' > "$THEME_DIR/retro-bios.plymouth"
 [Plymouth Theme]
 Name=Retro BIOS
@@ -119,40 +122,65 @@ cat << 'EOF' > "$THEME_DIR/retro-bios.script"
 Window.SetBackgroundTopColor(0.0, 0.0, 0.0);
 Window.SetBackgroundBottomColor(0.0, 0.0, 0.0);
 
+# EPA Energy Star Logo
 energy_image = Image("energy_star.png");
 energy_sprite = Sprite(energy_image);
-energy_x = Window.GetWidth() - energy_image.GetWidth() - 40;
-energy_y = 30;
-energy_sprite.SetX(energy_x);
-energy_sprite.SetY(energy_y);
-energy_sprite.SetOpacity(1.0);
+energy_sprite.SetX(Window.GetWidth() - energy_image.GetWidth() - 50);
+energy_sprite.SetY(40);
 
-title = Image.Text("Award Modular BIOS v4.51PG, An Energy Star Ally", 0.7, 0.7, 0.7);
-s_title = Sprite(title); s_title.SetX(40); s_title.SetY(30);
+# Static BIOS Text Headers
+title_img = Image.Text("Award Modular BIOS v4.51PG, An Energy Star Ally", 0.8, 0.8, 0.8, "Monospace 12");
+title_sp = Sprite(title_img); title_sp.SetX(40); title_sp.SetY(40);
 
-copy = Image.Text("Copyright (C) 1984-98, Award Software, Inc.", 0.7, 0.7, 0.7);
-s_copy = Sprite(copy); s_copy.SetX(40); s_copy.SetY(50);
+copy_img = Image.Text("Copyright (C) 1984-98, Award Software, Inc.", 0.6, 0.6, 0.6, "Monospace 12");
+copy_sp = Sprite(copy_img); copy_sp.SetX(40); copy_sp.SetY(65);
 
-cpu = Image.Text("Pentium II Processor - 300MHz", 0.9, 0.9, 0.9);
-s_cpu = Sprite(cpu); s_cpu.SetX(40); s_cpu.SetY(90);
+cpu_img = Image.Text("PENTIUM II CPU at 300MHz", 0.9, 0.9, 0.9, "Monospace 12");
+cpu_sp = Sprite(cpu_img); cpu_sp.SetX(40); cpu_sp.SetY(105);
 
-ram = Image.Text("Memory Testing : 262144K OK", 0.9, 0.9, 0.9);
-s_ram = Sprite(ram); s_ram.SetX(40); s_ram.SetY(115);
+# Dynamic RAM & Disk Sprites
+ram_sp = Sprite(); ram_sp.SetX(40); ram_sp.SetY(135);
+disks_sp = Sprite(); disks_sp.SetX(40); disks_sp.SetY(175);
 
-disks = Image.Text("Primary Master   : RETRO-HDD 8.4GB\nPrimary Slave    : None\nSecondary Master : CD-ROM Drive", 0.7, 0.7, 0.7);
-s_disks = Sprite(disks); s_disks.SetX(40); s_disks.SetY(155);
+# Footer Information
+setup_img = Image.Text("Press DEL to enter SETUP", 0.8, 0.8, 0.2, "Monospace 12");
+setup_sp = Sprite(setup_img); setup_sp.SetX(40); setup_sp.SetY(Window.GetHeight() - 70);
 
-press = Image.Text("Press DEL to enter SETUP", 0.6, 0.6, 0.6);
-s_press = Sprite(press); s_press.SetX(40); s_press.SetY(230);
+string_img = Image.Text("08/02/1998-i440BX-2A69KB0CC-00", 0.7, 0.7, 0.7, "Monospace 12");
+string_sp = Sprite(string_img); string_sp.SetX(40); string_sp.SetY(Window.GetHeight() - 45);
 
-status = Image.Text("BOOT: Starting Windows 98...", 0.2, 0.8, 0.2);
-s_status = Sprite(status); s_status.SetX(40); s_status.SetY(260);
+# 🟢 Динамічний відлік RAM та детекшн дисків під час завантаження Linux
+fun boot_progress_cb(duration, progress) {
+    # 1. Підрахунок RAM до 262144K (256 MB)
+    ram_kb = Math.Int(progress * 262144);
+    if (ram_kb > 262144) ram_kb = 262144;
+    
+    ram_txt = "Memory Testing : " + ram_kb + "K OK";
+    ram_img = Image.Text(ram_txt, 0.9, 0.9, 0.9, "Monospace 12");
+    ram_sp.SetImage(ram_img);
+
+    # 2. Покрокове виведення дисків
+    if (progress > 0.3) {
+        d_txt = "Detecting Primary Master   ... WIN98_RETRO.IMG\n";
+        if (progress > 0.65) {
+            d_txt = d_txt + "Detecting Primary Slave    ... DISK_E_RETRO.IMG\n";
+        }
+        if (progress > 0.85) {
+            d_txt = d_txt + "Initializing PnP Network Adapter ... OK";
+        }
+        disks_img = Image.Text(d_txt, 0.0, 0.8, 0.8, "Monospace 12"); # Cyan text
+        disks_sp.SetImage(disks_img);
+    }
+}
+
+Plymouth.SetBootProgressFunction(boot_progress_cb);
 EOF
 
 plymouth-set-default-theme -R retro-bios
+update-grub
 update-initramfs -u
 
-echo "=== 7. Автозапуск Wayland-середовища (Cage Kiosk) ==="
+echo "=== 7. Автозапуск X11 & Kiosk Openbox ==="
 mkdir -p /etc/systemd/system/getty@tty1.service.d/
 cat << 'EOF' > /etc/systemd/system/getty@tty1.service.d/autologin.conf
 [Service]
@@ -160,27 +188,45 @@ ExecStart=
 ExecStart=-/sbin/agetty --autologin retro --noclear %I $TERM
 EOF
 
+# Створення оновленого чистой конфіга Openbox
+mkdir -p /home/retro/.config/openbox
+cat << 'EOF' > /home/retro/.config/openbox/rc.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_config xmlns="http://openbox.org/3.4/rc">
+  <focus><focusNew>yes</focusNew><followMouse>no</followMouse><focusDelay>0</focusDelay></focus>
+  <theme><name>Clearlooks</name><keepBorder>no</keepBorder></theme>
+  <desktops><number>1</number></desktops>
+  <mouse><context name="Client"></context></mouse>
+  <applications>
+    <application class="*" name="*">
+      <decor>no</decor>
+      <fullscreen>yes</fullscreen>
+      <maximized>yes</maximized>
+    </application>
+  </applications>
+</openbox_config>
+EOF
+
 cat << 'EOF' > /home/retro/.bash_profile
 if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
     exec startx -- -nocursor
 fi
 EOF
+
 cat << 'EOF' > /home/retro/.xinitrc
 #!/bin/sh
 xset -dpms
 xset s off
 xset s noblank
 
-# Запуск віконного менеджера для коректного Fullscreen в X11
 openbox &
-
 exec dosbox-x -conf /home/retro/retroconsole/dosbox-win98.conf -fullscreen
 EOF
-chmod +x /home/retro/.xinitrc
-chown retro:retro /home/retro/.bash_profile
-chown retro:retro /home/retro/.xinitrc
 
-echo "=== 8. Конфігурація DOSBox-X (Мережа + Win98) ==="
+chmod +x /home/retro/.xinitrc
+chown -R retro:retro /home/retro/.config /home/retro/.bash_profile /home/retro/.xinitrc
+
+echo "=== 8. Конфігурація DOSBox-X (Мережа + Win98 + FastBoot) ==="
 cat << 'EOF' > "$RETRO_DIR/dosbox-win98.conf"
 [sdl]
 fullscreen=true
@@ -189,7 +235,9 @@ windowresolution=desktop
 output=texture
 autofit=true
 autolock=true
-clip_curspos=true
+mouse_capture=onload
+clip_cursor_to_window=true
+autolock_feedback=none
 
 [render]
 aspect=true
@@ -200,11 +248,17 @@ title=RetroConsole Win98
 memsize=256
 ver=7.10
 mouse_emulation=ps2
+startbanner=false
+confirm_exit=false
+securemode=true
 
 [cpu]
-core=dynamic
-cputype=pentium
+core=dynamic_x86
+cputype=pentium_mmx
 cycles=max
+
+[video]
+vmemsize=32
 
 [midi]
 mididevice=fluidsynth
@@ -217,6 +271,11 @@ ne2000=true
 nicbase=300
 nicirq=3
 backend=slirp
+
+[dos]
+lba=true
+file locking=false
+share=true
 
 [autoexec]
 @echo off
