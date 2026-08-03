@@ -22,11 +22,11 @@ apt install -y \
     xorg xinit openbox \
     build-essential git automake libsdl2-dev libsdl2-net-dev \
     libpcap-dev libslirp-dev libfluidsynth-dev libpng-dev libfreetype6-dev \
-    samba udev procps plymouth plymouth-themes pipewire-pulse wireplumber dbus-user-session sudo
+    samba udev procps plymouth plymouth-themes pipewire-pulse wireplumber dbus-user-session sudo wget
 
 systemctl --global disable fluidsynth
 
-echo "=== 2. Створення користувача, прав sudo на вимкнення та каталогів ==="
+echo "=== 2. Створення користувача, прав sudo та системної тишини ==="
 if ! id "retro" &>/dev/null; then
     useradd -m -s /bin/bash -G dialout,video,audio,input,cdrom,render retro
 else
@@ -41,6 +41,11 @@ chmod 0440 /etc/sudoers.d/retro-poweroff
 RETRO_DIR="/home/retro/retroconsole"
 mkdir -p "$RETRO_DIR/images"
 mkdir -p "$RETRO_DIR/share"
+
+# 🔇 Приховуємо системні банери, MOTD та версію ядра при авторизації
+touch /home/retro/.hushlogin
+sudo truncate -s 0 /etc/issue
+sudo truncate -s 0 /etc/motd
 chown -R retro:retro /home/retro
 
 echo "=== 3. Завантаження образу Windows 98 з GitHub Releases ==="
@@ -92,19 +97,45 @@ cd dosbox-x
 make -j$(nproc)
 make install
 
-echo "=== 6. Налаштування GRUB (/etc/default/grub) та Plymouth Award BIOS ==="
+echo "=== 6. Налаштування тишини GRUB, KMS та Plymouth Award BIOS ==="
 
-# 🔧 Пряме редагування /etc/default/grub
+# 🔧 Штатно вимикаємо текст "Loading Linux..." у 10_linux
+sed -i 's/quiet_boot=0/quiet_boot=1/g' /etc/grub.d/10_linux
+
+# 🔧 Налаштування /etc/default/grub (без console=tty12)
 sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=0/' /etc/default/grub
+
 if grep -q "^GRUB_CMDLINE_LINUX_DEFAULT" /etc/default/grub; then
-  sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash loglevel=0 vt.handoff=7 console=tty12 rd.systemd.show_status=false rd.udev.log_level=0 quiet_boot fastboot vt.global_cursor_default=0"/' /etc/default/grub
+  sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash loglevel=0 vt.handoff=7 systemd.show_status=false rd.systemd.show_status=false rd.udev.log_level=0 quiet_boot fastboot vt.global_cursor_default=0"/' /etc/default/grub
 else
-  echo 'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash loglevel=0 vt.handoff=7 console=tty12 rd.systemd.show_status=false rd.udev.log_level=0 quiet_boot fastboot vt.global_cursor_default=0"' >> /etc/default/grub
+  echo 'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash loglevel=0 vt.handoff=7 systemd.show_status=false rd.systemd.show_status=false rd.udev.log_level=0 quiet_boot fastboot vt.global_cursor_default=0"' >> /etc/default/grub
 fi
 
-echo "setterm -cursor off" >> /etc/issue
+grep -q "^GRUB_GFXMODE=" /etc/default/grub && sed -i 's/^GRUB_GFXMODE=.*/GRUB_GFXMODE=1024x768x32/' /etc/default/grub || echo 'GRUB_GFXMODE=1024x768x32' >> /etc/default/grub
+grep -q "^GRUB_GFXPAYLOAD_LINUX=" /etc/default/grub && sed -i 's/^GRUB_GFXPAYLOAD_LINUX=.*/GRUB_GFXPAYLOAD_LINUX=keep/' /etc/default/grub || echo 'GRUB_GFXPAYLOAD_LINUX=keep' >> /etc/default/grub
 
-# Створення теми Plymouth retro-bios
+# 🔌 Універсальні відеодрайвери в initramfs для безшовного Plymouth
+cat << 'EOF' > /etc/initramfs-tools/modules
+simpledrm
+efifb
+vesafb
+bochs_drm
+virtio_gpu
+qxl
+drm
+EOF
+
+sed -i 's/^MODULES=.*/MODULES=most/' /etc/initramfs-tools/initramfs.conf
+
+# 🎨 Створення теми Plymouth retro-bios & прибрання ShowDelay
+mkdir -p /etc/plymouth
+cat << 'EOF' > /etc/plymouth/plymouthd.conf
+[Daemon]
+Theme=retro-bios
+ShowDelay=0
+DeviceTimeout=8
+EOF
+
 THEME_DIR="/usr/share/plymouth/themes/retro-bios"
 mkdir -p "$THEME_DIR"
 
@@ -158,9 +189,9 @@ fun boot_progress_cb(duration, progress) {
     ram_sp.SetImage(ram_img);
 
     if (progress > 0.3) {
-        d_txt = "Detecting Primary Master   ... WIN98_RETRO.IMG\n";
+        d_txt = "Detecting Primary Master    ... WIN98_RETRO.IMG\n";
         if (progress > 0.65) {
-            d_txt = d_txt + "Detecting Primary Slave    ... DISK_E_RETRO.IMG\n";
+            d_txt = d_txt + "Detecting Primary Slave     ... DISK_E_RETRO.IMG\n";
         }
         if (progress > 0.85) {
             d_txt = d_txt + "Initializing PnP Network Adapter ... OK";
@@ -174,15 +205,17 @@ Plymouth.SetBootProgressFunction(boot_progress_cb);
 EOF
 
 plymouth-set-default-theme -R retro-bios
+update-initramfs -u -k all
 update-grub
-update-initramfs -u
 
-echo "=== 7. Автозапуск X11 & Kiosk Openbox з авто-вимкненням ==="
+echo "=== 7. Безшумний Автозапуск X11 & Kiosk Openbox ==="
 mkdir -p /etc/systemd/system/getty@tty1.service.d/
 cat << 'EOF' > /etc/systemd/system/getty@tty1.service.d/autologin.conf
 [Service]
 ExecStart=
-ExecStart=-/sbin/agetty --autologin retro --noclear %I $TERM
+ExecStart=-/sbin/agetty --autologin retro --noissue --nohostname --noclear %I $TERM
+Restart=always
+RestartSec=2s
 EOF
 
 mkdir -p /home/retro/.config/openbox
@@ -205,7 +238,7 @@ EOF
 
 cat << 'EOF' > /home/retro/.bash_profile
 if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
-    exec startx -- -nocursor
+    exec startx -- -nocursor -quiet >/dev/null 2>&1
 fi
 EOF
 
