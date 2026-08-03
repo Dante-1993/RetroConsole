@@ -97,24 +97,32 @@ cd dosbox-x
 make -j$(nproc)
 make install
 
-echo "=== 6. Налаштування тишини GRUB, KMS та Plymouth Award BIOS ==="
+echo "=== 6. Повне маскування GRUB, KMS та Plymouth Award BIOS ==="
 
-# 🔧 Штатно вимикаємо текст "Loading Linux..." у 10_linux
+# 🔇 1. Вимикаємо вивід внутрішніх повідомлень GRUB ("Loading Linux...")
 sed -i 's/quiet_boot=0/quiet_boot=1/g' /etc/grub.d/10_linux
 
-# 🔧 Налаштування /etc/default/grub (без console=tty12)
-sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=0/' /etc/default/grub
+# 🔧 Хелпер для безпечного встановлення параметрів у /etc/default/grub
+set_grub_var() {
+    local key="$1"
+    local val="$2"
+    if grep -q "^${key}=" /etc/default/grub; then
+        sed -i "s|^${key}=.*|${key}=${val}|" /etc/default/grub
+    else
+        echo "${key}=${val}" >> /etc/default/grub
+    fi
+}
 
-if grep -q "^GRUB_CMDLINE_LINUX_DEFAULT" /etc/default/grub; then
-  sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash loglevel=0 vt.handoff=7 systemd.show_status=false rd.systemd.show_status=false rd.udev.log_level=0 quiet_boot fastboot vt.global_cursor_default=0"/' /etc/default/grub
-else
-  echo 'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash loglevel=0 vt.handoff=7 systemd.show_status=false rd.systemd.show_status=false rd.udev.log_level=0 quiet_boot fastboot vt.global_cursor_default=0"' >> /etc/default/grub
-fi
+# 🔇 2. Повне приховування меню завантажувача та ігнорування помилок вимкнення
+set_grub_var "GRUB_TIMEOUT" "0"
+set_grub_var "GRUB_TIMEOUT_STYLE" "hidden"
+set_grub_var "GRUB_RECORDFAIL_TIMEOUT" "0"
+set_grub_var "GRUB_DISABLE_OS_PROBER" "true"
+set_grub_var "GRUB_GFXMODE" "1024x768x32"
+set_grub_var "GRUB_GFXPAYLOAD_LINUX" "keep"
+set_grub_var "GRUB_CMDLINE_LINUX_DEFAULT" '"quiet splash loglevel=0 vt.handoff=7 systemd.show_status=false rd.systemd.show_status=false rd.udev.log_level=0 quiet_boot fastboot vt.global_cursor_default=0"'
 
-grep -q "^GRUB_GFXMODE=" /etc/default/grub && sed -i 's/^GRUB_GFXMODE=.*/GRUB_GFXMODE=1024x768x32/' /etc/default/grub || echo 'GRUB_GFXMODE=1024x768x32' >> /etc/default/grub
-grep -q "^GRUB_GFXPAYLOAD_LINUX=" /etc/default/grub && sed -i 's/^GRUB_GFXPAYLOAD_LINUX=.*/GRUB_GFXPAYLOAD_LINUX=keep/' /etc/default/grub || echo 'GRUB_GFXPAYLOAD_LINUX=keep' >> /etc/default/grub
-
-# 🔌 Універсальні відеодрайвери в initramfs для безшовного Plymouth
+# 🔌 3. Універсальні відеодрайвери в initramfs для безшовного Plymouth
 cat << 'EOF' > /etc/initramfs-tools/modules
 simpledrm
 efifb
@@ -127,7 +135,7 @@ EOF
 
 sed -i 's/^MODULES=.*/MODULES=most/' /etc/initramfs-tools/initramfs.conf
 
-# 🎨 Створення теми Plymouth retro-bios & прибрання ShowDelay
+# 🎨 4. Створення теми Plymouth retro-bios & прибрання затримки ShowDelay
 mkdir -p /etc/plymouth
 cat << 'EOF' > /etc/plymouth/plymouthd.conf
 [Daemon]
