@@ -67,20 +67,3 @@
 
 ---
 
-## ☁️ Coming Soon: RetroCloud Ecosystem
-
-**RetroCloud** is an upcoming cloud-native storage and synchronization service tailored specifically for retro gaming enthusiasts and legacy operating systems.
-
-The platform bridges the gap between modern cloud infrastructure and vintage software, enabling seamless game save synchronization, ISO library management, and remote access to your retro assets from anywhere in the world.
-
----
-
-### 🚀 Key Planned Features:
-
-* **Cross-Device Save Sync:** Automatic cloud backup and synchronization of game save states across RetroConsole, modern PCs, laptops, and mobile devices.
-* **Legacy-to-Cloud Bridge:** Seamless integration linking modern WebRTC/P2P and Cloud APIs with vintage network protocols (SMBv1, FTP, WebDAV) for direct access within Windows 95/98 and MS-DOS.
-* **Zero-Install Web Dashboard:** A sleek, browser-based management interface to organize your ISO images, virtual hard drives, and system profiles on the fly.
-* **Data Protection & Versioning:** Cloud snapshots preventing save corruption or disk image degradation.
-
-> 🛠 **Development Status:** RetroCloud is currently in active development. Stay tuned to this repository for early access and beta testing announcements!
-> 🛠 **Статус розробки:** Проєкт знаходиться в активній фазі створення. Слідкуйте за оновленнями репозиторію, щоб не пропустити анонс бета-тестування! локальній мережі або через P2P-з'єднання без встановлення стороннього софту на ретро-систему.
