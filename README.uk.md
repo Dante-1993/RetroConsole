@@ -67,11 +67,20 @@
 
 ---
 
-### 🚀 Заплановані можливості RetroCloud:
+## ☁️ Coming Soon: RetroCloud Ecosystem
 
-* **Кросплатформена синхронізація сейвів:** Автоматичний бекап та синхронізація збережень ігор між вашою RetroConsole, ПК, ноутбуком чи мобільними пристроями.
-* **Міст між епохами:** Поєднання сучасних WebRTC/P2P та хмарних API із класичними мережевими протоколами (SMBv1, FTP, WebDAV) для прямої роботи всередині Windows 95/98 та MS-DOS.
-* **Веб-панель керування:** Зручний браузерний інтерфейс для керування віртуальними дисками, ISO-бібліотекою та налаштуваннями без встановлення додаткового софту на клієнтські пристрої.
-* **Захист від втрати даних:** Автоматична версійність та захист від пошкодження файлів дискет і жорстких дисків.
+**RetroCloud** is an upcoming cloud-native storage and synchronization service tailored specifically for retro gaming enthusiasts and legacy operating systems.
 
+The platform bridges the gap between modern cloud infrastructure and vintage software, enabling seamless game save synchronization, ISO library management, and remote access to your retro assets from anywhere in the world.
+
+---
+
+### 🚀 Key Planned Features:
+
+* **Cross-Device Save Sync:** Automatic cloud backup and synchronization of game save states across RetroConsole, modern PCs, laptops, and mobile devices.
+* **Legacy-to-Cloud Bridge:** Seamless integration linking modern WebRTC/P2P and Cloud APIs with vintage network protocols (SMBv1, FTP, WebDAV) for direct access within Windows 95/98 and MS-DOS.
+* **Zero-Install Web Dashboard:** A sleek, browser-based management interface to organize your ISO images, virtual hard drives, and system profiles on the fly.
+* **Data Protection & Versioning:** Cloud snapshots preventing save corruption or disk image degradation.
+
+> 🛠 **Development Status:** RetroCloud is currently in active development. Stay tuned to this repository for early access and beta testing announcements!
 > 🛠 **Статус розробки:** Проєкт знаходиться в активній фазі створення. Слідкуйте за оновленнями репозиторію, щоб не пропустити анонс бета-тестування! локальній мережі або через P2P-з'єднання без встановлення стороннього софту на ретро-систему.
