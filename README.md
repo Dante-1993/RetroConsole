@@ -1,77 +1,56 @@
-# 🎮 RetroConsole OS & Installer
+# 🎮 RetroConsole OS
 
-**RetroConsole** is a standalone, kiosk-oriented operating system built on Debian 13 (Trixie), designed to seamlessly run classic MS-DOS and Windows 95/98 games and applications on modern and legacy hardware.
+> **Turn any modern PC, laptop, or Raspberry Pi into a dedicated Windows 98 machine.**
 
-The system comes with the **RetroConsole Custom Installer ISO** — a customized zero-touch installation media styled after late 90s setup utilities. The deployment process is completely automated, featuring a dual-phase setup with Windows 98 Setup-style promotional slideshows and an Award BIOS POST screen finish.
-
----
-
-## 💻 System Requirements
-
-| Parameter | Minimum Requirements | Recommended Requirements |
-| :--- | :--- | :--- |
-| **CPU** | 64-bit (x86_64 / ARM64), Dual-Core | Quad-Core CPU (Ryzen / Core i5+) |
-| **RAM** | 2 GB | 4 GB or more |
-| **Storage** | 8 GB Free Space (HDD) | 16 GB Free Space (SSD) |
-| **Graphics** | OpenGL 2.1 compatible GPU | OpenGL 3.x+ / Vulkan compatible GPU |
-| **Display Resolution** | 1024×768 | 1920×1080 |
-| **Network** | Internet access for initial setup phase | 100/1000 Mbit Ethernet or Wi-Fi |
-
-> **Performance Note:** Thanks to dynamic CPU core recompilation (`core=dynamic_x86`), the underlying DOSBox-X emulation layer is extremely lightweight. Core 2 Duo or Athlon 64 X2 CPUs are more than sufficient for most DOS and Windows 95/98 titles without heavy 3D acceleration.
+> **RetroConsole is not an emulator launcher.** It is a complete, self-contained retro operating environment built to make modern hardware behave like a dedicated 1998 computer.
 
 ---
 
-## 🧪 Hardware & Platform Compatibility
+## 📸 Screenshots & Showcase
 
-| Platform / Environment | Compatibility Status | Notes |
-| :--- | :--- | :--- |
-| **AMD Ryzen (x86_64)** | ✅ Fully Supported | Tested, maximum performance |
-| **Intel Core (x86_64)** | ✅ Fully Supported | Tested across multiple generations |
-| **Legacy x86 PCs (~2005+)** | ✅ Fully Supported | Performance depends on raw CPU clock speed |
-| **Raspberry Pi 5 (ARM64)** | 🔄 In Testing | Solid Win98 boot; heavy Glide/3D workloads under testing |
-| **QEMU / KVM** | ✅ Fully Supported | Reference development and ISO build platform |
-| **VMware Workstation / ESXi** | ✅ Fully Supported | Smooth graphics stack execution |
-| **VirtualBox** | ✅ Fully Supported | 3D acceleration must be enabled in VM settings |
-| **Hyper-V** | ✅ Fully Supported | Operates via RetroConsole custom framebuffers |
+| Phase 1: Custom Installer | Phase 2: Setup Slideshow |
+| :---: | :---: |
+| ![RetroConsole Installer Setup](https://via.placeholder.com/400x250.png?text=RetroConsole+Setup) | ![Windows 98 Setup Promo](https://via.placeholder.com/400x250.png?text=Win98+Setup+Slideshow) |
+
+| Award BIOS POST Screen | Running Windows 98 |
+| :---: | :---: |
+| ![Award BIOS POST Screen](https://via.placeholder.com/400x250.png?text=Award+BIOS+POST) | ![Windows 98 Desktop](https://via.placeholder.com/400x250.png?text=Windows+98+Desktop) |
 
 ---
 
-## ❓ Why These Requirements & How It Works
+## ⚡ Why RetroConsole?
 
-> **RetroConsole does not run Windows 98 directly on bare-metal modern hardware.**
-
-Modern chipsets, NVMe drives, UEFI firmware, and contemporary GPUs lack Windows 9x drivers. Instead of native booting, RetroConsole deploys a minimalist, hyper-tuned Linux kernel layer hosting a software-emulated late-90s PC environment.
-
-### Key Advantages:
-* **Hardware Independence:** Operates identically on a 2026 gaming rig, inside a Hyper-V VM, or on a compact Raspberry Pi 5.
-* **Zero Driver Issues:** Windows 98 interacts exclusively with virtualized legacy devices (Sound Blaster 16/AWE32, SoundFont MIDI, NE2000 network adapter, VESA/S3 Graphics).
-* **Seamless Silent Boot:** All Linux, GRUB, and systemd text outputs are masked. On startup, users only see custom retro splash screens and Award BIOS POST simulations.
+* **✔ Zero Driver Hunting:** No searching for legacy SATA, GPU, or motherboard drivers.
+* **✔ Bare-Metal Feel:** Boots seamlessly with Award BIOS POST simulations and zero Linux text output.
+* **✔ Plug & Play Media:** Insert a USB flash drive with games or ISOs — RetroConsole handles the rest.
+* **✔ Perfect Audio Hardware:** Built-in General MIDI via FluidSynth, Sound Blaster 16/AWE32, and Gravis Ultrasound (GUS) support.
+* **✔ Modern Network Bridge:** Integrated SMBv1 Samba server allows transferring files directly from your main PC.
+* **✔ Hardware Accelerated:** OpenGL 2.1/3.x rendering for crystal-clear scaling without aspect ratio distortion.
 
 ---
 
-## 💿 RetroConsole Custom Installer ISO
+## 🏗️ Architecture: How It Works
 
-The **RetroConsole** installation image is crafted from `debian-13-netinst` with heavily patched installer internals:
-
-1. **Phase 1 (ISO Setup):** Clean GTK installer interface free of standard Debian branding, executing automated disk partitioning and base extraction in zero-touch mode.
-2. **Phase 2 (First-Boot Setup):** Upon initial reboot, a Plymouth `retro-promo` theme triggers a **Windows 98 Setup-style slideshow** (*"Sit back and relax while setup configures your system..."*). In the background, it fetches the Win98 image, compiles DOSBox-X, and configures Samba (SMBv1) alongside SoundFont MIDI synthesizers.
-3. **Finalization:** The system transitions to an **Award BIOS** screen, auto-reboots, and boots directly into full-screen Windows 98.
-
----
-
-## ☁️ Coming Soon: RetroCloud Ecosystem
-
-**RetroCloud** is an upcoming cloud-native storage and synchronization service tailored specifically for retro gaming enthusiasts and legacy operating systems.
-
-The platform bridges the gap between modern cloud infrastructure and vintage software, enabling seamless game save synchronization, ISO library management, and remote access to your retro assets from anywhere in the world.
-
----
-
-### 🚀 Key Planned Features:
-
-* **Cross-Device Save Sync:** Automatic cloud backup and synchronization of game save states across RetroConsole, modern PCs, laptops, and mobile devices.
-* **Legacy-to-Cloud Bridge:** Seamless integration linking modern WebRTC/P2P and Cloud APIs with vintage network protocols (SMBv1, FTP, WebDAV) for direct access within Windows 95/98 and MS-DOS.
-* **Zero-Install Web Dashboard:** A sleek, browser-based management interface to organize your ISO images, virtual hard drives, and system profiles on the fly.
-* **Data Protection & Versioning:** Cloud snapshots preventing save corruption or disk image degradation.
-
-> 🛠 **Development Status:** RetroCloud is currently in active development. Stay tuned to this repository for early access and beta testing announcements!
+```text
+               ┌────────────────────────────────────────┐
+               │    Modern Hardware / Virtual Machine   │
+               │   (x86_64 / ARM64, NVMe, UEFI, GPU)    │
+               └───────────────────┬────────────────────┘
+                                   │
+                                   ▼
+               ┌────────────────────────────────────────┐
+               │         Micro Linux Runtime            │
+               │   (Debian 13 Kernel + Silent Boot)     │
+               └───────────────────┬────────────────────┘
+                                   │
+                                   ▼
+               ┌────────────────────────────────────────┐
+               │         RetroConsole Core              │
+               │   (DOSBox-X + FluidSynth + Samba)      │
+               └───────────────────┬────────────────────┘
+                                   │
+                                   ▼
+               ┌────────────────────────────────────────┐
+               │         Windows 98 OS / MS-DOS         │
+               │ (Dedicated Fullscreen Kiosk Experience)│
+               └────────────────────────────────────────┘
