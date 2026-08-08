@@ -278,6 +278,10 @@ EOF
 
 cat << 'EOF' > /home/retro/.bash_profile
 if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
+    # Інтерактивний вибір Wi-Fi перед графічним середовищем
+    /usr/local/bin/retro-wifi-selector.sh
+    
+    # Запуск графічного середовища (X11 / Openbox)
     exec startx -- -nocursor -quiet >/dev/null 2>&1
 fi
 EOF
@@ -408,6 +412,61 @@ rmdir $MOUNT_POINT 2>/dev/null || true
 EOF
 
 chmod +x /usr/local/bin/retro-usb-sync.sh
+
+cat << 'EOF' > /usr/local/bin/retro-wifi-selector.sh
+#!/bin/bash
+
+# Пошук бездротового інтерфейсу
+WIFI_IF=$(ip link | grep -E -o 'wlan[0-9]|wlp[0-9]s[0-9a-z]+' | head -n 1 || true)
+
+if [ -n "$WIFI_IF" ]; then
+    # Переконаємося, що інтерфейс піднято
+    ip link set "$WIFI_IF" up 2>/dev/null || true
+    
+    export NEWT_COLORS='
+    root=white,blue
+    window=white,lightgray
+    border=black,lightgray
+    textbox=black,lightgray
+    button=white,blue
+    '
+
+    # Запит користувачу: чи бажає він підключити Wi-Fi
+    if whiptail --title " Wireless Setup " --yesno "Detected Wi-Fi interface ($WIFI_IF).\nWould you like to connect to a Wi-Fi network before start?" 10 65; then
+        
+        whiptail --title " Scanning " --infobox "Scanning for Wi-Fi networks..." 8 50
+        sleep 2
+
+        # Сканування та формування списку SSID через NetworkManager
+        SSID_LIST=()
+        while read -r line; do
+            [ -n "$line" ] && SSID_LIST+=("$line" "Wi-Fi Network")
+        done < <(nmcli -t -f SSID dev wifi list 2>/dev/null | grep -v '^$' | sort -u)
+
+        if [ ${#SSID_LIST[@]} -gt 0 ]; then
+            SELECTED_SSID=$(whiptail --title " Select Network " --menu "Choose Wi-Fi network:" 15 65 5 "${SSID_LIST[@]}" 3>&1 1>&2 2>&3)
+            
+            if [ -n "$SELECTED_SSID" ]; then
+                WIFI_PASS=$(whiptail --title " Security " --passwordbox "Enter password for '$SELECTED_SSID':" 10 65 3>&1 1>&2 2>&3)
+                
+                if [ -n "$WIFI_PASS" ]; then
+                    whiptail --title " Connecting " --infobox "Connecting to '$SELECTED_SSID'..." 8 50
+                    
+                    if nmcli dev wifi connect "$SELECTED_SSID" password "$WIFI_PASS" >/dev/null 2>&1; then
+                        whiptail --title " Success " --msgbox "Successfully connected to '$SELECTED_SSID'!" 8 55
+                    else
+                        whiptail --title " Connection Error " --msgbox "Failed to connect to '$SELECTED_SSID'. Starting system anyway..." 10 60
+                    fi
+                fi
+            fi
+        else
+            whiptail --title " No Networks " --msgbox "No Wi-Fi networks found. Starting system..." 8 55
+        fi
+    fi
+fi
+EOF
+
+chmod +x /usr/local/bin/retro-wifi-selector.sh
 
 if [ "$IS_CHROOT" = false ]; then
     udevadm control --reload-rules 2>/dev/null || true
