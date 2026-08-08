@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
+# Експорт локалей для запобігання помилкам perl та apt
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
+export DEBIAN_FRONTEND=noninteractive
+
 # ==============================================================================
-# НАЛАШТУВАННЯ (Змініть під свій репозиторій)
+# НАЛАШТУВАННЯ
 # ==============================================================================
 GITHUB_USER="Dante-1993"
 GITHUB_REPO="RetroConsole"
@@ -16,15 +21,28 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
+# 🔍 ДЕТЕКТОР СЕРЕДОВИЩА (Chroot / Live-Build vs Installed OS)
+IS_CHROOT=false
+if [ "$(stat -c %d:%i / 2>/dev/null)" != "$(stat -c %d:%i /proc/1/root 2>/dev/null)" ] || [ -f /etc/debian_chroot ]; then
+    IS_CHROOT=true
+    echo "========================================================="
+    echo " ==> Виявлено середовище: CHROOT / LIVE-BUILD"
+    echo "========================================================="
+else
+    echo "========================================================="
+    echo " ==> Виявлено середовище: ВСТАНОВЛЕНА СИСТЕМА"
+    echo "========================================================="
+fi
+
 echo "=== 1. Оновлення системи та встановлення залежностей ==="
 apt update && apt upgrade -y
 apt install -y \
     xorg xinit openbox \
     build-essential git automake libsdl2-dev libsdl2-net-dev \
-    libpcap-dev libslirp-dev libfluidsynth-dev libpng-dev libfreetype6-dev \
-    samba udev procps plymouth plymouth-themes pipewire-pulse wireplumber dbus-user-session sudo wget
+    libpcap-dev libslirp-dev libfluidsynth-dev fluid-soundfont-gm libpng-dev libfreetype6-dev \
+    samba udev procps plymouth plymouth-themes pipewire-pulse wireplumber dbus-user-session sudo wget ca-certificates
 
-systemctl --global disable fluidsynth
+systemctl --global disable fluidsynth 2>/dev/null || true
 
 echo "=== 2. Створення користувача, прав sudo та системної тишини ==="
 if ! id "retro" &>/dev/null; then
@@ -34,7 +52,6 @@ else
     usermod -aG dialout,video,audio,input,cdrom,render retro
 fi
 
-# 🔌 Дозволяємо користувачу retro вимикати систему без запиту пароля
 echo "retro ALL=(ALL:ALL) NOPASSWD: /sbin/poweroff" > /etc/sudoers.d/retro-poweroff
 chmod 0440 /etc/sudoers.d/retro-poweroff
 
@@ -42,19 +59,23 @@ RETRO_DIR="/home/retro/retroconsole"
 mkdir -p "$RETRO_DIR/images"
 mkdir -p "$RETRO_DIR/share"
 
-# 🔇 Приховуємо системні банери, MOTD та версію ядра при авторизації
 touch /home/retro/.hushlogin
-sudo truncate -s 0 /etc/issue
-sudo truncate -s 0 /etc/motd
+truncate -s 0 /etc/issue 2>/dev/null || true
+truncate -s 0 /etc/motd 2>/dev/null || true
 chown -R retro:retro /home/retro
 
 echo "=== 3. Завантаження образу Windows 98 з GitHub Releases ==="
 IMG_TARGET="$RETRO_DIR/images/win98.img"
 if [ ! -f "$IMG_TARGET" ]; then
     echo "Завантаження стиснутого образу Windows 98..."
-    wget -O "$RETRO_DIR/images/win98.img.gz" "$WIN98_URL"
-    echo "Розпакування образу..."
-    gunzip -f "$RETRO_DIR/images/win98.img.gz"
+    if wget --timeout=30 --tries=3 -O "$RETRO_DIR/images/win98.img.gz" "$WIN98_URL"; then
+        echo "Розпакування образу..."
+        gunzip -f "$RETRO_DIR/images/win98.img.gz"
+    else
+        echo "УВАГА: Не вдалося завантажити образ. Створення файлу-заглушки."
+        rm -f "$RETRO_DIR/images/win98.img.gz"
+        truncate -s 2G "$IMG_TARGET"
+    fi
     chown retro:retro "$IMG_TARGET"
 else
     echo "Образ $IMG_TARGET вже існує, пропускаємо завантаження."
@@ -85,7 +106,11 @@ cat << 'EOF' > /etc/samba/smb.conf
    force user = retro
 EOF
 
-systemctl restart smbd nmbd
+if [ "$IS_CHROOT" = false ]; then
+    systemctl restart smbd nmbd 2>/dev/null || true
+else
+    systemctl enable smbd nmbd 2>/dev/null || true
+fi
 
 echo "=== 5. Компіляція та інсталяція DOSBox-X ==="
 cd /usr/src
@@ -93,16 +118,19 @@ if [ ! -d "dosbox-x" ]; then
     git clone --depth 1 https://github.com/joncampbell123/dosbox-x.git
 fi
 cd dosbox-x
-./build-debug-sdl2
-make -j$(nproc)
+./build
 make install
 
 echo "=== 6. Повне маскування GRUB, KMS та Plymouth Award BIOS ==="
 
-# 🔇 1. Вимикаємо вивід внутрішніх повідомлень GRUB ("Loading Linux...")
-sed -i 's/quiet_boot=0/quiet_boot=1/g' /etc/grub.d/10_linux
+# Гарантуємо наявність необхідних директорій та файлів GRUB
+mkdir -p /etc/default /etc/grub.d /boot/grub
+touch /etc/default/grub
 
-# 🔧 Хелпер для безпечного встановлення параметрів у /etc/default/grub
+if [ -f /etc/grub.d/10_linux ]; then
+    sed -i 's/quiet_boot=0/quiet_boot=1/g' /etc/grub.d/10_linux 2>/dev/null || true
+fi
+
 set_grub_var() {
     local key="$1"
     local val="$2"
@@ -113,7 +141,6 @@ set_grub_var() {
     fi
 }
 
-# 🔇 2. Повне приховування меню завантажувача та ігнорування помилок вимкнення
 set_grub_var "GRUB_TIMEOUT" "0"
 set_grub_var "GRUB_TIMEOUT_STYLE" "hidden"
 set_grub_var "GRUB_RECORDFAIL_TIMEOUT" "0"
@@ -122,7 +149,6 @@ set_grub_var "GRUB_GFXMODE" "1024x768x32"
 set_grub_var "GRUB_GFXPAYLOAD_LINUX" "keep"
 set_grub_var "GRUB_CMDLINE_LINUX_DEFAULT" '"quiet splash loglevel=0 vt.handoff=7 systemd.show_status=false rd.systemd.show_status=false rd.udev.log_level=0 quiet_boot fastboot vt.global_cursor_default=0"'
 
-# 🔌 3. Універсальні відеодрайвери в initramfs для безшовного Plymouth
 cat << 'EOF' > /etc/initramfs-tools/modules
 simpledrm
 efifb
@@ -133,9 +159,8 @@ qxl
 drm
 EOF
 
-sed -i 's/^MODULES=.*/MODULES=most/' /etc/initramfs-tools/initramfs.conf
+sed -i 's/^MODULES=.*/MODULES=most/' /etc/initramfs-tools/initramfs.conf 2>/dev/null || true
 
-# 🎨 4. Створення теми Plymouth retro-bios & прибрання затримки ShowDelay
 mkdir -p /etc/plymouth
 cat << 'EOF' > /etc/plymouth/plymouthd.conf
 [Daemon]
@@ -147,7 +172,6 @@ EOF
 THEME_DIR="/usr/share/plymouth/themes/retro-bios"
 mkdir -p "$THEME_DIR"
 
-# Логотип EPA Energy Star
 echo "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdom6EAAABDSURBVHhe7cExAQAAAMKg9U9tCj8gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4A045AABjS24eAAAAABJRU5ErkJggg==" | tr -d '\r\n ' | base64 -d > "$THEME_DIR/energy_star.png"
 
 cat << 'EOF' > "$THEME_DIR/retro-bios.plymouth"
@@ -212,9 +236,14 @@ fun boot_progress_cb(duration, progress) {
 Plymouth.SetBootProgressFunction(boot_progress_cb);
 EOF
 
-plymouth-set-default-theme -R retro-bios
+plymouth-set-default-theme -R retro-bios || true
 update-initramfs -u -k all
-update-grub
+
+if [ "$IS_CHROOT" = false ]; then
+    update-grub || true
+else
+    echo "===> [ПРОПУЩЕНО] update-grub пропускається у середовищі chroot."
+fi
 
 echo "=== 7. Безшумний Автозапуск X11 & Kiosk Openbox ==="
 mkdir -p /etc/systemd/system/getty@tty1.service.d/
@@ -258,10 +287,8 @@ xset s noblank
 
 openbox &
 
-# Запускаємо DOSBox-X (без exec, щоб скрипт чекав його завершення)
 dosbox-x -conf /home/retro/retroconsole/dosbox-win98.conf -fullscreen
 
-# 🔌 Коли DOSBox-X закривається (при вимкненні Win98) — вимикаємо сам ПК
 sudo /sbin/poweroff
 EOF
 
@@ -355,14 +382,16 @@ if [ -d "$MOUNT_POINT/retro_isos" ]; then
     chown -R retro:retro "$SHARE_DIR"
 fi
 
-umount $MOUNT_POINT
-rmdir $MOUNT_POINT
+umount $MOUNT_POINT 2>/dev/null || true
+rmdir $MOUNT_POINT 2>/dev/null || true
 EOF
 
 chmod +x /usr/local/bin/retro-usb-sync.sh
-udevadm control --reload-rules
+
+if [ "$IS_CHROOT" = false ]; then
+    udevadm control --reload-rules 2>/dev/null || true
+fi
 
 echo "========================================================="
 echo " Інсталяція RetroConsole успішно завершена!"
-echo " Перезавантажте систему за допомогою команди: reboot"
 echo "========================================================="
