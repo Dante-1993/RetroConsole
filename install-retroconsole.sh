@@ -65,7 +65,7 @@ truncate -s 0 /etc/issue 2>/dev/null || true
 truncate -s 0 /etc/motd 2>/dev/null || true
 chown -R retro:retro /home/retro
 # Ставимо пароль на юзера retro
-"echo 'retro:retro' | chroot /target chpasswd"
+"echo 'retro:retro' |  chpasswd"
 
 echo "=== 3. Завантаження образу Windows 98 з GitHub Releases ==="
 IMG_TARGET="$RETRO_DIR/images/win98.img"
