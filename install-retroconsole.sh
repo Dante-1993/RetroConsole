@@ -294,9 +294,26 @@ xset s noblank
 
 openbox &
 
-dosbox-x -conf /home/retro/retroconsole/dosbox-win98.conf -fullscreen
+# 1. Перевірка: якщо система встановлена на диск (НЕ Live) і диска D ще немає
+if ! grep -q "boot=live" /proc/cmdline; then
+    if [ ! -f /home/retro/retroconsole/d.img ]; then
+        echo "=== Створення додаткового диска D: (8 ГБ) ==="
+        dosbox-x -nogui -silent -fastlaunch \
+            -c "IMGMAKE /home/retro/retroconsole/d.img -t hd_8gig" \
+            -c "exit"
+        
+        chown retro:retro /home/retro/retroconsole/d.img
+        chmod 666 /home/retro/retroconsole/d.img
+    fi
+fi
 
-sudo /sbin/poweroff
+# 2. Запуск DOSBox-X
+dosbox-x -conf /home/retro/retroconsole/dosbox-win98.conf -fullscreen -silent -fastlaunch
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -eq 0 ]; then
+    sudo /sbin/poweroff
+fi
 EOF
 
 chmod +x /home/retro/.xinitrc
@@ -381,6 +398,10 @@ share=true
 @echo off
 ver set 7.10
 imgmount c /home/retro/retroconsole/images/win98.img -t hdd -fs fat
+
+# Автоматичне моунування диска D, якщо файл d.img існує на системі
+if exist d.img imgmount d /home/retro/retroconsole/d.img -t hdd -fs fat
+
 boot -l c
 EOF
 
