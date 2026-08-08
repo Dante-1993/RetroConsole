@@ -40,6 +40,7 @@ apt install -y \
     xorg xinit openbox \
     build-essential git automake libsdl2-dev libsdl2-net-dev \
     libpcap-dev libslirp-dev libfluidsynth-dev fluid-soundfont-gm libpng-dev libfreetype6-dev \
+    libglu1-mesa-dev libgl-dev \
     samba udev procps plymouth plymouth-themes pipewire-pulse wireplumber dbus-user-session sudo wget ca-certificates
 
 systemctl --global disable fluidsynth 2>/dev/null || true
