@@ -308,7 +308,7 @@ if ! grep -q "boot=live" /proc/cmdline; then
 fi
 
 # 2. Запуск DOSBox-X
-dosbox-x -conf /home/retro/retroconsole/dosbox-win98.conf -fullscreen -silent -fastlaunch
+dosbox-x -conf /home/retro/retroconsole/dosbox-win98.conf -fullscreen  -fastlaunch
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 0 ]; then
