@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -e
-
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 # Експорт локалей для запобігання помилкам perl та apt
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
