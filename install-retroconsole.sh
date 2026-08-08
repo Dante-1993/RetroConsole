@@ -296,6 +296,24 @@ EOF
 chmod +x /home/retro/.xinitrc
 chown -R retro:retro /home/retro/.config /home/retro/.bash_profile /home/retro/.xinitrc
 
+# 1. Встановлення інструментів шрифтів консолі
+apt-get install -y console-setup kbd locales
+
+# 2. Генерація локалі
+echo "uk_UA.UTF-8 UTF-8" > /etc/locale.gen
+locale-gen
+
+# 3. Налаштування шрифту TTY з підтримкою кирилиці
+cat << 'EOF' > /etc/default/console-setup
+CHARMAP="UTF-8"
+CODESET="Uni2"
+FONTFACE="Fixed"
+FONTSIZE="16x32"
+EOF
+
+# 4. Застосування шрифту для консолі
+setupcon || true
+
 echo "=== 8. Конфігурація DOSBox-X (APM + Мережа + Win98) ==="
 cat << 'EOF' > "$RETRO_DIR/dosbox-win98.conf"
 [sdl]
